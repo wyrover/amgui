@@ -114,4 +114,134 @@ void Widget::draw(float x, float y) {
 }
 
 
+/**
+    dispatches the given allegro event, to the various event methods of this widget.
+    @return true if the event was used by a widget, false otherwise.
+ */
+bool Widget::dispatch(ALLEGRO_EVENT *event) {
+    if (!m_enabled) return false;
+
+    switch (event->type) {
+
+        case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
+            if (intersects(event->mouse.x - getX(), event->mouse.y - getY())) {
+                if (!_dragAndDrop) {
+                    if (event->mouse.button == 1) {
+                        return leftButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                    if (event->mouse.button == 2) {
+                        return rightButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                    if (event->mouse.button == 3) {
+                        return middleButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                }
+                else {
+                    //TODO
+                }
+            }
+            break;
+
+        case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
+            if (intersects(event->mouse.x - getX(), event->mouse.y - getY())) {
+                if (!_dragAndDrop) {
+                    if (event->mouse.button == 1) {
+                        return leftButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                    if (event->mouse.button == 2) {
+                        return rightButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                    if (event->mouse.button == 3) {
+                        return middleButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                }
+                else {
+                    //TODO
+                }
+            }
+            break;
+    }
+
+    return false;
+}
+
+
+/**
+    Returns the child with the given coordinates.
+ */
+WidgetPtr Widget::childFromPoint(float x, float y) const {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_visible && child->intersects(x - child->getX(), y - child->getY())) {
+            return child;
+        }
+    }
+    return WidgetPtr();
+}
+
+
+/**
+    Left button down; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::leftButtonDown(int x, int y) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->leftButtonDown(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    right button down; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::rightButtonDown(int x, int y) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->rightButtonDown(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    middle button down; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::middleButtonDown(int x, int y) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->middleButtonDown(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    Left button up; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::leftButtonUp(int x, int y) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->leftButtonUp(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    right button up; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::rightButtonUp(int x, int y) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->rightButtonUp(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    middle button up; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::middleButtonUp(int x, int y) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->middleButtonUp(x - child->getX(), y - child->getY()) : false;
+}
+
+
+//global state
+bool Widget::_dragAndDrop = false;
+
+
 } //namespace amgui

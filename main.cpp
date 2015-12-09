@@ -6,6 +6,17 @@ using namespace std;
 using namespace amgui;
 
 
+template <class H> void print(H&& h) {
+    cout << h << '\n';
+}
+
+
+template <class H, class ...T> void print(H&& h, T&&... t) {
+    cout << h << ' ';
+    print(t...);
+}
+
+
 class Test : public Widget {
 public:
     static std::shared_ptr<Test> create(float width, float height) {
@@ -25,6 +36,36 @@ public:
         al_draw_filled_rectangle(px + getX(), py + getY(), px + getX() + getWidth(), py + getY() + getHeight(), al_map_rgb(255, 255, 255));
         al_draw_rectangle(px + getX(), py + getY(), px + getX() + getWidth(), py + getY() + getHeight(), al_map_rgb(0, 0, 0), 1);
         Widget::draw(px, py);
+    }
+
+    virtual bool leftButtonDown(int x, int y) {
+        print("leftButtonDown", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::leftButtonDown(x, y);
+    }
+
+    virtual bool rightButtonDown(int x, int y) {
+        print("rightButtonDown", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::rightButtonDown(x, y);
+    }
+
+    virtual bool middleButtonDown(int x, int y) {
+        print("middleButtonDown", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::middleButtonDown(x, y);
+    }
+
+    virtual bool leftButtonUp(int x, int y) {
+        print("leftButtonUp", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::leftButtonUp(x, y);
+    }
+
+    virtual bool rightButtonUp(int x, int y) {
+        print("rightButtonUp", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::rightButtonUp(x, y);
+    }
+
+    virtual bool middleButtonUp(int x, int y) {
+        print("middleButtonUp", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::middleButtonUp(x, y);
     }
 };
 
@@ -75,6 +116,10 @@ int main()
             case ALLEGRO_EVENT_TIMER:
                 root->draw();
                 al_flip_display();
+                break;
+
+            default:
+                root->dispatch(&event);
                 break;
         }
     }

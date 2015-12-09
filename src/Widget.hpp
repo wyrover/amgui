@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <list>
+#include <allegro5/allegro.h>
 #include "Rect.hpp"
 
 
@@ -123,14 +124,14 @@ public:
         Returns the left coordinate of the widget.
      */
     float getX() const {
-        return m_rect.getLeft();
+        return m_rect.getX();
     }
 
     /**
         Returns the top coordinate of the widget.
      */
     float getY() const {
-        return m_rect.getTop();
+        return m_rect.getY();
     }
 
     /**
@@ -250,6 +251,81 @@ public:
         draw(getX(), getY());
     }
 
+    /**
+        dispatches the given allegro event, to the various event methods of this widget.
+        @return true if the event was used by a widget, false otherwise.
+     */
+    bool dispatch(ALLEGRO_EVENT *event);
+
+    /**
+        Returns true if drag-n-drop is in progress.
+     */
+    static bool isDragAndDrop() {
+        return _dragAndDrop;
+    }
+
+    /**
+        Begins drag-n-drop.
+     */
+    static void beginDragAndDrop() {
+        _dragAndDrop = true;
+    }
+
+    /**
+        Ends drag-n-drop.
+     */
+    static void endDragAndDrop() {
+        _dragAndDrop = false;
+    }
+
+    /**
+        Returns the child with the given coordinates.
+     */
+    WidgetPtr childFromPoint(float x, float y) const;
+
+    /**
+        Checks if the widget intersects the given point.
+     */
+    virtual bool intersects(float x, float y) const {
+        return x >= 0 && x < getWidth() && y >= 0 && y < getHeight();
+    }
+
+    /**
+        Left button down; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool leftButtonDown(int x, int y);
+
+    /**
+        right button down; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool rightButtonDown(int x, int y);
+
+    /**
+        middle button down; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool middleButtonDown(int x, int y);
+
+    /**
+        Left button up; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool leftButtonUp(int x, int y);
+
+    /**
+        right button up; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool rightButtonUp(int x, int y);
+
+    /**
+        middle button up; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool middleButtonUp(int x, int y);
+
 private:
     //parent
     std::weak_ptr<Widget> m_parent;
@@ -266,6 +342,9 @@ private:
     //state
     bool m_visible = true;
     bool m_enabled = true;
+
+    //global state
+    static bool _dragAndDrop;
 };
 
 

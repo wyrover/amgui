@@ -75,6 +75,20 @@ public:
     }
 
     /**
+        Same as getLeft().
+     */
+    float getX() const {
+        return m_left;
+    }
+
+    /**
+        Same as getTop().
+     */
+    float getY() const {
+        return m_top;
+    }
+
+    /**
         Returns right - left + 1.
      */
     float getWidth() const {

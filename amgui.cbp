@@ -15,12 +15,12 @@
 				<Compiler>
 					<Add option="-std=c++11" />
 					<Add option="-g" />
-					<Add directory="../allegro-5.0.10-mingw-4.7.0/include" />
-					<Add directory="C:/Users/axilmar/Documents/dev/amgui/src" />
+					<Add directory="../../dev/allegro-5.0.10-mingw-4.7.0/include" />
+					<Add directory="src" />
 				</Compiler>
 				<Linker>
-					<Add library="..\allegro-5.0.10-mingw-4.7.0\lib\liballegro-5.0.10-mt-debug.a" />
-					<Add directory="../allegro-5.0.10-mingw-4.7.0/lib" />
+					<Add library="liballegro-5.0.10-monolith-md-debug.a" />
+					<Add directory="../../dev/allegro-5.0.10-mingw-4.7.0/lib" />
 				</Linker>
 			</Target>
 			<Target title="Release">
