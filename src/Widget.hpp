@@ -64,11 +64,6 @@ public:
     Widget &operator = (Widget &wgt) = delete;
 
     /**
-        Clones this widget.
-     */
-    virtual WidgetPtr clone() const = 0;
-
-    /**
         Returns a pointer to parent.
      */
     WidgetPtr getParent() const {
@@ -200,6 +195,20 @@ public:
     }
 
     /**
+        Sets the position.
+     */
+    void setPosition(float x, float y) {
+        setRect(x, y, getWidth(), getHeight());
+    }
+
+    /**
+        Sets the size.
+     */
+    void setSize(float width, float height) {
+        setRect(getX(), getY(), width, height);
+    }
+
+    /**
         Retrieves the visible flag.
      */
     bool isVisible() const {
@@ -232,7 +241,14 @@ public:
         Subclasses may add the drawing code before calling the default implementation
         to draw the children.
      */
-    virtual void draw(float parentX = 0, float parentY = 0);
+    virtual void draw(float x, float y);
+
+    /**
+        Draws this widget at the current X and Y of the widget.
+     */
+    void draw() {
+        draw(getX(), getY());
+    }
 
 private:
     //parent

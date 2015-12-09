@@ -105,10 +105,10 @@ void Widget::setRect(float x, float y, float width, float height) {
 /**
     The default implementation draws the children.
  */
-void Widget::draw(float parentX/* = 0*/, float parentY/* = 0*/) {
+void Widget::draw(float x, float y) {
     for(auto &child : m_children) {
         if (child->m_visible) {
-            child->draw(parentX + getX(), parentY + getY());
+            child->draw(x + getX(), y + getY());
         }
     }
 }
