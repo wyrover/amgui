@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <list>
+#include <string>
 #include <allegro5/allegro.h>
 #include "Rect.hpp"
 
@@ -65,6 +66,21 @@ public:
     Widget &operator = (Widget &wgt) = delete;
 
     /**
+        Returns the id of the widget.
+     */
+    const std::string &getId() const {
+        return m_id;
+    }
+
+    /**
+        Sets the id of the widget.
+        @param id id of the widget.
+     */
+    void setId(const std::string &id) {
+        m_id = id;
+    }
+
+    /**
         Returns a pointer to parent.
      */
     WidgetPtr getParent() const {
@@ -96,11 +112,21 @@ public:
     }
 
     /**
+        Returns the root widget of this widget tree.
+     */
+    WidgetPtr getRoot() const;
+
+    /**
         Returns the list of children.
      */
     const WidgetList &getChildren() const {
         return m_children;
     }
+
+    /**
+        Returns true if this widget tree contains the given widget.
+     */
+    bool contains(const WidgetPtr &wgt) const;
 
     /**
         Adds a widget as a child.
@@ -231,10 +257,20 @@ public:
     }
 
     /**
+        Returns true of all widgets from this to root are enabled.
+     */
+    bool isEnabledTree() const;
+
+    /**
         Sets the enabled flag.
      */
-    virtual void setEnabled(bool enabled) {
-        m_enabled = enabled;
+    virtual void setEnabled(bool enabled);
+
+    /**
+        Returns true if the widget currently has the mouse.
+     */
+    bool hasMouse() const {
+        return m_mouse;
     }
 
     /**
@@ -255,7 +291,20 @@ public:
         dispatches the given allegro event, to the various event methods of this widget.
         @return true if the event was used by a widget, false otherwise.
      */
-    bool dispatch(ALLEGRO_EVENT *event);
+    virtual bool dispatch(ALLEGRO_EVENT *event);
+
+    /**
+        Returns true if this widget has the input focus.
+     */
+    bool hasFocus() const {
+        return _focusWidget.lock().get() == this;
+    }
+
+    /**
+        Sets the focus to this widget.
+        @return true if the focus was successfully set, false otherwise.
+     */
+    virtual bool setFocus();
 
     /**
         Returns true if drag-n-drop is in progress.
@@ -326,7 +375,93 @@ public:
      */
     virtual bool middleButtonUp(int x, int y);
 
+    /**
+        mouse enter; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool mouseEnter(int x, int y);
+
+    /**
+        mouse move; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool mouseMove(int x, int y);
+
+    /**
+        mouse leave; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool mouseLeave(int x, int y);
+
+    /**
+        mouse wheel; the default implementation dispatches the event to the child that contains the mouse.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool mouseWheel(int z, int w);
+
+    /**
+        Invoked when the widget lost the focus.
+        @return false to prevent the widget from losing the focus, true otherwise.
+     */
+    virtual bool lostFocus() { return true; }
+
+    /**
+        Invoked when the widget got the focus.
+     */
+    virtual bool gotFocus() { return true; }
+
+    /**
+        Key down; invoked when the widget has the input focus;
+        the default implementation dispatches the event to all children,
+        stopping when the event is processed by a child.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool keyDown(int keycode);
+
+    /**
+        Key up; invoked when the widget has the input focus;
+        the default implementation dispatches the event to all children,
+        stopping when the event is processed by a child.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool keyUp(int keycode);
+
+    /**
+        character; invoked when the widget has the input focus;
+        the default implementation dispatches the event to all children,
+        stopping when the event is processed by a child.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool keyChar(int keycode, int unichar, int modifiers);
+
+    /**
+        unused key down; invoked when the focus widget did not process the event;
+        the default implementation dispatches the event to all children,
+        stopping when the event is processed by a child.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool unusedKeyDown(int keycode);
+
+    /**
+        unused key up; invoked when the focus widget did not process the event;
+        the default implementation dispatches the event to all children,
+        stopping when the event is processed by a child.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool unusedKeyUp(int keycode);
+
+    /**
+        unused character; invoked when the widget has the input focus;
+        the default implementation dispatches the event to all children,
+        stopping when the event is processed by a child.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool unusedKeyChar(int keycode, int unichar, int modifiers);
+
 private:
+    //mainly used for debugging
+    std::string m_id;
+
     //parent
     std::weak_ptr<Widget> m_parent;
 
@@ -342,9 +477,14 @@ private:
     //state
     bool m_visible = true;
     bool m_enabled = true;
+    bool m_mouse = false;
 
     //global state
+    static std::weak_ptr<Widget> _focusWidget;
     static bool _dragAndDrop;
+
+    //get child with mouse
+    WidgetPtr _childFromMouse() const;
 };
 
 

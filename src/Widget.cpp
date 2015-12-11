@@ -34,6 +34,29 @@ WidgetPtr Widget::getNextSibling() const {
 
 
 /**
+    Returns the root widget of this widget tree.
+ */
+WidgetPtr Widget::getRoot() const {
+    WidgetPtr result;
+    for(WidgetPtr ptr = std::const_pointer_cast<Widget>(shared_from_this()); ptr; result = ptr, ptr = ptr->getParent());
+    return result;
+}
+
+
+/**
+    Returns true if this widget tree contains the given widget.
+ */
+bool Widget::contains(const WidgetPtr &wgt) const {
+    for(WidgetPtr temp = wgt; temp; temp = temp->getParent()) {
+        if (temp.get() == this) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
     Adds a widget as a child.
     @param widget widget to add as a child.
     @param childAfter the new child is inserted before this, if it is not null.
@@ -78,6 +101,12 @@ bool Widget::removeChild(const WidgetPtr &widget) {
     m_children.erase(widget->m_it);
     widget->m_parent.reset();
 
+    //if the child has the mouse, do a mouseLeave on the child,
+    //because since it is removed it can no longer have the mouse
+    if (widget->m_mouse) {
+        widget->mouseLeave(-1, -1);
+    }
+
     //success
     return true;
 }
@@ -103,6 +132,45 @@ void Widget::setRect(float x, float y, float width, float height) {
 
 
 /**
+    Returns true of all widgets from this to root are enabled.
+ */
+bool Widget::isEnabledTree() const {
+    for(WidgetPtr ptr = std::const_pointer_cast<Widget>(shared_from_this()); ptr; ptr = ptr->getParent()) {
+        if (!ptr->m_enabled) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+/**
+    Sets the enabled flag.
+ */
+void Widget::setEnabled(bool enabled) {
+    if (enabled == m_enabled) return;
+    m_enabled = enabled;
+
+    //special actions if the widget is disabled
+    if (!enabled) {
+        //if the widget is disabled while having the mouse,
+        //inform it that it has lost the mouse
+        if (m_mouse) {
+            mouseLeave(-1, -1);
+        }
+
+        //if this or a child of it has the input focus,
+        //remove the input focus
+        WidgetPtr focusWidget = _focusWidget.lock();
+        if (contains(focusWidget)) {
+            _focusWidget.reset();
+            focusWidget->lostFocus();
+        }
+    }
+}
+
+
+/**
     The default implementation draws the children.
  */
 void Widget::draw(float x, float y) {
@@ -121,19 +189,21 @@ void Widget::draw(float x, float y) {
 bool Widget::dispatch(ALLEGRO_EVENT *event) {
     if (!m_enabled) return false;
 
+    bool result = false;
+
     switch (event->type) {
 
         case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
             if (intersects(event->mouse.x - getX(), event->mouse.y - getY())) {
                 if (!_dragAndDrop) {
                     if (event->mouse.button == 1) {
-                        return leftButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
+                        result = leftButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
                     }
-                    if (event->mouse.button == 2) {
-                        return rightButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
+                    else if (event->mouse.button == 2) {
+                        result = rightButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
                     }
-                    if (event->mouse.button == 3) {
-                        return middleButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
+                    else if (event->mouse.button == 3) {
+                        result = middleButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
                     }
                 }
                 else {
@@ -146,13 +216,13 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
             if (intersects(event->mouse.x - getX(), event->mouse.y - getY())) {
                 if (!_dragAndDrop) {
                     if (event->mouse.button == 1) {
-                        return leftButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
+                        result = leftButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
                     }
-                    if (event->mouse.button == 2) {
-                        return rightButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
+                    else if (event->mouse.button == 2) {
+                        result = rightButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
                     }
-                    if (event->mouse.button == 3) {
-                        return middleButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
+                    else if (event->mouse.button == 3) {
+                        result = middleButtonUp(event->mouse.x - getX(), event->mouse.y - getY());
                     }
                 }
                 else {
@@ -160,9 +230,103 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
                 }
             }
             break;
+
+        case ALLEGRO_EVENT_MOUSE_AXES:
+        case ALLEGRO_EVENT_MOUSE_WARPED:
+
+            //mouse move
+            if (event->mouse.dx || event->mouse.dy) {
+                if (!_dragAndDrop) {
+                    bool hasMouse = intersects(event->mouse.x - getX(), event->mouse.y - getY());
+                    if (hasMouse && m_mouse) {
+                        result = mouseMove(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                    else if (hasMouse) {
+                        result = mouseEnter(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                    else if (m_mouse) {
+                        result = mouseLeave(event->mouse.x - getX(), event->mouse.y - getY());
+                    }
+                }
+                else {
+                    //TODO
+                }
+            }
+
+            //mouse wheel
+            if (event->mouse.dz || event->mouse.dw) {
+                result = mouseWheel(event->mouse.z, event->mouse.w) || result;
+            }
+
+            break;
+
+        case ALLEGRO_EVENT_KEY_DOWN:
+            {
+                WidgetPtr focusWidget = _focusWidget.lock();
+                if (focusWidget) {
+                    result = focusWidget->keyDown(event->keyboard.keycode);
+                }
+                if (!result) {
+                    result = unusedKeyDown(event->keyboard.keycode);
+                }
+            }
+            break;
+
+        case ALLEGRO_EVENT_KEY_UP:
+            {
+                WidgetPtr focusWidget = _focusWidget.lock();
+                if (focusWidget) {
+                    result = focusWidget->keyUp(event->keyboard.keycode);
+                }
+                if (!result) {
+                    result = unusedKeyUp(event->keyboard.keycode);
+                }
+            }
+            break;
+
+        case ALLEGRO_EVENT_KEY_CHAR:
+            {
+                WidgetPtr focusWidget = _focusWidget.lock();
+                if (focusWidget) {
+                    result = focusWidget->keyChar(event->keyboard.keycode, event->keyboard.unichar, event->keyboard.modifiers);
+                }
+                if (!result) {
+                    result = unusedKeyChar(event->keyboard.keycode, event->keyboard.unichar, event->keyboard.modifiers);
+                }
+            }
+            break;
     }
 
-    return false;
+    return result;
+}
+
+
+/**
+    Sets the focus to this widget.
+    @return true if the focus was successfully set, false otherwise.
+ */
+bool Widget::setFocus() {
+    //must be enabled
+    if (!isEnabledTree()) return false;
+
+    WidgetPtr prevFocusWidget = _focusWidget.lock();
+
+    //already has the focus
+    if (prevFocusWidget.get() == this) return true;
+
+    //if there is another focus widget, tell it to lose the input focus
+    if (prevFocusWidget) {
+        _focusWidget.reset();
+        if (!prevFocusWidget->lostFocus()) {
+            _focusWidget = prevFocusWidget;
+            return false;
+        }
+    }
+
+    //got he focus
+    _focusWidget = shared_from_this();
+    gotFocus();
+    return true;
 }
 
 
@@ -240,8 +404,174 @@ bool Widget::middleButtonUp(int x, int y) {
 }
 
 
+/**
+    mouse enter; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::mouseEnter(int x, int y) {
+    m_mouse = true;
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->mouseEnter(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    mouse move; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::mouseMove(int x, int y) {
+    WidgetPtr oldChild = _childFromMouse();
+    WidgetPtr newChild = childFromPoint(x, y);
+    if (newChild == oldChild) {
+        return newChild && newChild->m_enabled ? newChild->mouseMove(x - newChild->getX(), y - newChild->getY()) : false;
+    }
+    bool ok = false;
+    if (oldChild && oldChild->m_enabled) {
+        ok = oldChild->mouseLeave(x - oldChild->getX(), y - oldChild->getY());
+    }
+    if (newChild && newChild->m_enabled) {
+        ok = newChild->mouseEnter(x - newChild->getX(), y - newChild->getY()) || ok;
+    }
+    return ok;
+}
+
+
+/**
+    mouse leave; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::mouseLeave(int x, int y) {
+    m_mouse = false;
+    WidgetPtr child = _childFromMouse();
+    return child ? child->mouseLeave(x - child->getX(), y - child->getY()) : false;
+}
+
+
+/**
+    mouse wheel; the default implementation dispatches the event to the child that contains the mouse.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::mouseWheel(int z, int w) {
+    WidgetPtr child = _childFromMouse();
+    return child && child->m_enabled ? child->mouseWheel(z, w) : false;
+}
+
+
+/**
+    Key down; invoked when the widget has the input focus;
+    the default implementation dispatches the event to all children,
+    stopping when the event is processed by a child.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::keyDown(int keycode) {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_enabled && child->keyDown(keycode)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+    Key up; invoked when the widget has the input focus;
+    the default implementation dispatches the event to all children,
+    stopping when the event is processed by a child.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::keyUp(int keycode) {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_enabled && child->keyUp(keycode)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+    character; invoked when the widget has the input focus;
+    the default implementation dispatches the event to all children,
+    stopping when the event is processed by a child.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::keyChar(int keycode, int unichar, int modifiers) {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_enabled && child->keyChar(keycode, unichar, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+    unused key down; invoked when the focus widget did not process the event;
+    the default implementation dispatches the event to all children,
+    stopping when the event is processed by a child.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::unusedKeyDown(int keycode) {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_enabled && child->unusedKeyDown(keycode)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+    unused key up; invoked when the focus widget did not process the event;
+    the default implementation dispatches the event to all children,
+    stopping when the event is processed by a child.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::unusedKeyUp(int keycode) {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_enabled && child->unusedKeyUp(keycode)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+/**
+    unused character; invoked when the widget has the input focus;
+    the default implementation dispatches the event to all children,
+    stopping when the event is processed by a child.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::unusedKeyChar(int keycode, int unichar, int modifiers) {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_enabled && child->unusedKeyChar(keycode, unichar, modifiers)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 //global state
+std::weak_ptr<Widget> Widget::_focusWidget;
 bool Widget::_dragAndDrop = false;
+
+
+//get child with mouse
+WidgetPtr Widget::_childFromMouse() const {
+    for(auto it = m_children.rbegin(); it != m_children.rend(); ++it) {
+        auto &child = *it;
+        if (child->m_mouse) return child;
+    }
+    return WidgetPtr();
+}
 
 
 } //namespace amgui

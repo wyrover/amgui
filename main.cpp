@@ -67,6 +67,31 @@ public:
         print("middleButtonUp", getX(), getY(), getWidth(), getHeight(), x, y);
         return Widget::middleButtonUp(x, y);
     }
+
+    virtual bool mouseEnter(int x, int y) {
+        print("mouseEnter", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::mouseEnter(x, y);
+    }
+
+    virtual bool mouseMove(int x, int y) {
+        print("mouseMove", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::mouseMove(x, y);
+    }
+
+    virtual bool mouseLeave(int x, int y) {
+        print("mouseLeave", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::mouseLeave(x, y);
+    }
+
+    virtual bool mouseWheel(int z, int w) {
+        print("mouseWheel", getX(), getY(), getWidth(), getHeight(), z, w);
+        return Widget::mouseWheel(z, w);
+    }
+
+    virtual bool unusedKeyChar(int keycode, int unichar, int modifiers) {
+        print("unusedKeyChar", getX(), getY(), getWidth(), getHeight(), keycode, (char)unichar, modifiers);
+        return Widget::unusedKeyChar(keycode, unichar, modifiers);
+    }
 };
 
 
@@ -110,6 +135,9 @@ int main()
                     case ALLEGRO_KEY_ESCAPE:
                         loop = false;
                         break;
+
+                    default:
+                        root->dispatch(&event);
                 }
                 break;
 
