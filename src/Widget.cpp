@@ -206,9 +206,6 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
                         result = middleButtonDown(event->mouse.x - getX(), event->mouse.y - getY());
                     }
                 }
-                else {
-                    //TODO
-                }
             }
             break;
 
@@ -226,7 +223,16 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
                     }
                 }
                 else {
-                    //TODO
+                    if (event->mouse.button == 1) {
+                        result = leftDrop(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                    }
+                    else if (event->mouse.button == 2) {
+                        result = rightDrop(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                    }
+                    else if (event->mouse.button == 3) {
+                        result = middleDrop(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                    }
+                    endDragAndDrop();
                 }
             }
             break;
@@ -236,8 +242,8 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
 
             //mouse move
             if (event->mouse.dx || event->mouse.dy) {
+                bool hasMouse = intersects(event->mouse.x - getX(), event->mouse.y - getY());
                 if (!_dragAndDrop) {
-                    bool hasMouse = intersects(event->mouse.x - getX(), event->mouse.y - getY());
                     if (hasMouse && m_mouse) {
                         result = mouseMove(event->mouse.x - getX(), event->mouse.y - getY());
                     }
@@ -249,19 +255,32 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
                     }
                 }
                 else {
-                    //TODO
+                    if (hasMouse && m_mouse) {
+                        result = dragMove(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                    }
+                    else if (hasMouse) {
+                        result = dragEnter(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                    }
+                    else if (m_mouse) {
+                        result = dragLeave(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                    }
                 }
             }
 
             //mouse wheel
             if (event->mouse.dz || event->mouse.dw) {
-                result = mouseWheel(event->mouse.z, event->mouse.w) || result;
+                if (!_dragAndDrop) {
+                    result = mouseWheel(event->mouse.z, event->mouse.w) || result;
+                }
+                else {
+                    result = dragWheel(event->mouse.z, event->mouse.w, _modifiers, _draggedObject, _dragAndDropSource) || result;
+                }
             }
 
             break;
 
         case ALLEGRO_EVENT_KEY_DOWN:
-            {
+            if (!_dragAndDrop) {
                 WidgetPtr focusWidget = _focusWidget.lock();
                 if (focusWidget) {
                     result = focusWidget->keyDown(event->keyboard.keycode);
@@ -273,7 +292,7 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
             break;
 
         case ALLEGRO_EVENT_KEY_UP:
-            {
+            if (!_dragAndDrop) {
                 WidgetPtr focusWidget = _focusWidget.lock();
                 if (focusWidget) {
                     result = focusWidget->keyUp(event->keyboard.keycode);
@@ -285,7 +304,7 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
             break;
 
         case ALLEGRO_EVENT_KEY_CHAR:
-            {
+            if (!_dragAndDrop) {
                 WidgetPtr focusWidget = _focusWidget.lock();
                 if (focusWidget) {
                     result = focusWidget->keyChar(event->keyboard.keycode, event->keyboard.unichar, event->keyboard.modifiers);
@@ -293,6 +312,11 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
                 if (!result) {
                     result = unusedKeyChar(event->keyboard.keycode, event->keyboard.unichar, event->keyboard.modifiers);
                 }
+            }
+            else if (event->keyboard.modifiers != _modifiers) {
+                _modifiers = event->keyboard.modifiers;
+                result = dragLeave(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource);
+                result = dragEnter(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource) || result;
             }
             break;
     }
@@ -327,6 +351,31 @@ bool Widget::setFocus() {
     _focusWidget = shared_from_this();
     gotFocus();
     return true;
+}
+
+
+/**
+    Begins drag-n-drop.
+    @return true if the drag-n-drop starts successfully, false otherwise.
+ */
+bool Widget::beginDragAndDrop(const Variant &draggedObject) {
+    if (_dragAndDrop) return false;
+    if (draggedObject.isEmpty()) return false;
+    _dragAndDrop = true;
+    _draggedObject = draggedObject;
+    _dragAndDropSource = shared_from_this();
+    getRoot()->mouseLeave(-1, -1);
+    return true;
+}
+
+
+/**
+    Ends drag-n-drop, if it has been started.
+ */
+void Widget::endDragAndDrop() {
+    _dragAndDrop = false;
+    _draggedObject.reset();
+    _dragAndDropSource.reset();
 }
 
 
@@ -453,7 +502,7 @@ bool Widget::mouseLeave(int x, int y) {
  */
 bool Widget::mouseWheel(int z, int w) {
     WidgetPtr child = _childFromMouse();
-    return child && child->m_enabled ? child->mouseWheel(z, w) : false;
+    return child ? child->mouseWheel(z, w) : false;
 }
 
 
@@ -559,9 +608,95 @@ bool Widget::unusedKeyChar(int keycode, int unichar, int modifiers) {
 }
 
 
+/**
+    Left drop; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::leftDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->leftDrop(x - child->getX(), y - child->getY(), modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    right drop; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::rightDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->rightDrop(x - child->getX(), y - child->getY(), modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    middle drop; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::middleDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->middleDrop(x - child->getX(), y - child->getY(), modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    drag enter; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::dragEnter(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    m_mouse = true;
+    WidgetPtr child = childFromPoint(x, y);
+    return child && child->m_enabled ? child->dragEnter(x - child->getX(), y - child->getY(), modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    drag move; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::dragMove(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    WidgetPtr oldChild = _childFromMouse();
+    WidgetPtr newChild = childFromPoint(x, y);
+    if (newChild == oldChild) {
+        return newChild && newChild->m_enabled ? newChild->dragMove(x - newChild->getX(), y - newChild->getY(), modifiers, draggedObject, dragSource) : false;
+    }
+    bool ok = false;
+    if (oldChild && oldChild->m_enabled) {
+        ok = oldChild->dragLeave(x - oldChild->getX(), y - oldChild->getY(), modifiers, draggedObject, dragSource);
+    }
+    if (newChild && newChild->m_enabled) {
+        ok = newChild->dragEnter(x - newChild->getX(), y - newChild->getY(), modifiers, draggedObject, dragSource) || ok;
+    }
+    return ok;
+}
+
+
+/**
+    drag leave; the default implementation dispatches the event to children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::dragLeave(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    m_mouse = false;
+    WidgetPtr child = _childFromMouse();
+    return child ? child->dragLeave(x - child->getX(), y - child->getY(), modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    drag wheel; the default implementation dispatches the event to the child that contains the mouse.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+    WidgetPtr child = _childFromMouse();
+    return child ? child->dragWheel(z, w, modifiers, draggedObject, dragSource) : false;
+}
+
+
 //global state
 std::weak_ptr<Widget> Widget::_focusWidget;
 bool Widget::_dragAndDrop = false;
+Variant Widget::_draggedObject;
+WidgetPtr Widget::_dragAndDropSource;
+size_t Widget::_modifiers = 0;
 
 
 //get child with mouse

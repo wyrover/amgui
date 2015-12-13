@@ -2,11 +2,11 @@
 #define AMGUI_WIDGET_HPP
 
 
-#include <memory>
 #include <list>
 #include <string>
 #include <allegro5/allegro.h>
 #include "Rect.hpp"
+#include "Variant.hpp"
 
 
 namespace amgui {
@@ -314,18 +314,25 @@ public:
     }
 
     /**
-        Begins drag-n-drop.
+        Returns the source of the drag and drop widget.
      */
-    static void beginDragAndDrop() {
-        _dragAndDrop = true;
+    static const WidgetPtr &getDragAndDropSource() {
+        return _dragAndDropSource;
     }
 
     /**
-        Ends drag-n-drop.
+        Begins drag-n-drop, with this widget as the source of the data.
+        @param draggedObject the object being dragged.
+        @return true if the drag-n-drop starts successfully, false otherwise.
      */
-    static void endDragAndDrop() {
-        _dragAndDrop = false;
-    }
+    bool beginDragAndDrop(const Variant &draggedObject);
+
+    /**
+        Manually ends drag-n-drop, if it has been started.
+        This function is invoked on mouse button up after drag-n-drop started,
+        so there is no need to call it manually.
+     */
+    static void endDragAndDrop();
 
     /**
         Returns the child with the given coordinates.
@@ -458,6 +465,48 @@ public:
      */
     virtual bool unusedKeyChar(int keycode, int unichar, int modifiers);
 
+    /**
+        Left drop; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool leftDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
+    /**
+        right drop; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool rightDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
+    /**
+        middle drop; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool middleDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
+    /**
+        drag enter; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragEnter(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
+    /**
+        drag move; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragMove(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
+    /**
+        drag leave; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragLeave(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
+    /**
+        drag wheel; the default implementation dispatches the event to the child that contains the mouse.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
+
 private:
     //mainly used for debugging
     std::string m_id;
@@ -482,6 +531,9 @@ private:
     //global state
     static std::weak_ptr<Widget> _focusWidget;
     static bool _dragAndDrop;
+    static Variant _draggedObject;
+    static WidgetPtr _dragAndDropSource;
+    static size_t _modifiers;
 
     //get child with mouse
     WidgetPtr _childFromMouse() const;

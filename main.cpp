@@ -19,9 +19,12 @@ template <class H, class ...T> void print(H&& h, T&&... t) {
 
 class Test : public Widget {
 public:
+    bool hasData = false;
+
     static std::shared_ptr<Test> create(float width, float height) {
         std::shared_ptr<Test> test = std::make_shared<Test>();
         test->setSize(width, height);
+        test->hasData = true;
         return test;
     }
 
@@ -35,11 +38,17 @@ public:
     virtual void draw(float px, float py) {
         al_draw_filled_rectangle(px + getX(), py + getY(), px + getX() + getWidth(), py + getY() + getHeight(), al_map_rgb(255, 255, 255));
         al_draw_rectangle(px + getX(), py + getY(), px + getX() + getWidth(), py + getY() + getHeight(), al_map_rgb(0, 0, 0), 1);
+        if (hasData) {
+            al_draw_filled_rectangle(px + getX(), py + getY(), px + getX() + 16, py + getY() + 16, al_map_rgb(255, 0, 0));
+        }
         Widget::draw(px, py);
     }
 
     virtual bool leftButtonDown(int x, int y) {
         print("leftButtonDown", getX(), getY(), getWidth(), getHeight(), x, y);
+        if (hasData && x < 16 && y < 16) {
+            beginDragAndDrop(std::string("TestData"));
+        }
         return Widget::leftButtonDown(x, y);
     }
 
@@ -91,6 +100,61 @@ public:
     virtual bool unusedKeyChar(int keycode, int unichar, int modifiers) {
         print("unusedKeyChar", getX(), getY(), getWidth(), getHeight(), keycode, (char)unichar, modifiers);
         return Widget::unusedKeyChar(keycode, unichar, modifiers);
+    }
+
+    /**
+        Left drop; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool leftDrop(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+        print("leftDrop", getX(), getY(), getWidth(), getHeight(), x, y);
+        if (childFromPoint(x, y)) {
+            return Widget::leftDrop(x, y, modifiers, draggedObject, dragSource);
+        }
+        Test *test = dynamic_cast<Test *>(dragSource.get());
+        if (test) {
+            std::string data = (std::string &)draggedObject;
+            test->hasData = false;
+            hasData = true;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+        drag enter; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragEnter(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+        print("dragEnter", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::dragEnter(x, y, modifiers, draggedObject, dragSource);
+    }
+
+    /**
+        drag move; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragMove(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+        print("dragMove", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::dragMove(x, y, modifiers, draggedObject, dragSource);
+    }
+
+    /**
+        drag leave; the default implementation dispatches the event to children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragLeave(int x, int y, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+        print("dragLeave", getX(), getY(), getWidth(), getHeight(), x, y);
+        return Widget::dragLeave(x, y, modifiers, draggedObject, dragSource);
+    }
+
+    /**
+        drag wheel; the default implementation dispatches the event to the child that contains the mouse.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
+        print("dragWheel", getX(), getY(), getWidth(), getHeight(), z, w);
+        return Widget::dragWheel(z, w, modifiers, draggedObject, dragSource);
     }
 };
 
