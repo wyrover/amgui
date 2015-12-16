@@ -35,13 +35,13 @@ public:
         return test;
     }
 
-    virtual void draw(float px, float py) {
+    virtual void draw(float px, float py, bool enabled, bool highlighted, bool pushed, bool selected) {
         al_draw_filled_rectangle(px + getX(), py + getY(), px + getX() + getWidth(), py + getY() + getHeight(), al_map_rgb(255, 255, 255));
         al_draw_rectangle(px + getX(), py + getY(), px + getX() + getWidth(), py + getY() + getHeight(), al_map_rgb(0, 0, 0), 1);
         if (hasData) {
             al_draw_filled_rectangle(px + getX(), py + getY(), px + getX() + 16, py + getY() + 16, al_map_rgb(255, 0, 0));
         }
-        Widget::draw(px, py);
+        Widget::draw(px, py, enabled, highlighted, pushed, selected);
     }
 
     virtual bool leftButtonDown(int x, int y) {

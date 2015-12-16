@@ -35,8 +35,7 @@ public:
     /**
         The default constructor.
      */
-    Widget() {
-    }
+    Widget();
 
     /**
         The copy constructor is deleted.
@@ -277,14 +276,20 @@ public:
         The default implementation draws the children.
         Subclasses may add the drawing code before calling the default implementation
         to draw the children.
+        @param x base x coordinate to draw the widget upon.
+        @param y base y coordinate to draw the widget upon.
+        @param enabled if true, then the widget and all ancestors of it are enabled.
+        @param highlighted if true, then the widget or an ancestor of it has the mouse.
+        @param pushed if true, then the widget or an ancestor of it is pushed.
+        @param selected if true, then the widget or an ancestor of it is selected.
      */
-    virtual void draw(float x, float y);
+    virtual void draw(float x, float y, bool enabled, bool highlighted, bool pushed, bool selected);
 
     /**
-        Draws this widget at the current X and Y of the widget.
+        Draws this widget at the current X and Y of the widget, using the widget properties as parameters.
      */
     void draw() {
-        draw(getX(), getY());
+        draw(getX(), getY(), true, m_mouse, m_pushed, m_selected);
     }
 
     /**
@@ -305,6 +310,34 @@ public:
         @return true if the focus was successfully set, false otherwise.
      */
     virtual bool setFocus();
+
+    /**
+        Check if the widget is in pushed state.
+     */
+    bool isPushed() const {
+        return m_pushed;
+    }
+
+    /**
+        Sets the widget to the pushed state.
+     */
+    virtual void setPushed(bool pushed) {
+        m_pushed = pushed;
+    }
+
+    /**
+        Check if the widget is in selected state.
+     */
+    bool isSelected() const {
+        return m_selected;
+    }
+
+    /**
+        Sets the widget to the selected state.
+     */
+    virtual void setSelected(bool selected) {
+        m_selected = selected;
+    }
 
     /**
         Returns true if drag-n-drop is in progress.
@@ -507,6 +540,20 @@ public:
      */
     virtual bool dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
 
+    /**
+        Used for making the widget tree occupy the smallest possible space.
+        The default implementation simply passes the message to children.
+        Subclasses should add the packing code after the call to the base class method.
+     */
+    virtual void pack();
+
+    /**
+        Used for laying out widgets according to algorithms occupied by widgets.
+        The default implementation simply passes the message to children.
+        Subclasses should add the layout code before the call to the base class method.
+     */
+    virtual void layout();
+
 private:
     //mainly used for debugging
     std::string m_id;
@@ -524,9 +571,11 @@ private:
     Rect m_rect;
 
     //state
-    bool m_visible = true;
-    bool m_enabled = true;
-    bool m_mouse = false;
+    bool m_visible:1;
+    bool m_enabled:1;
+    bool m_mouse:1;
+    bool m_pushed:1;
+    bool m_selected:1;
 
     //global state
     static std::weak_ptr<Widget> _focusWidget;

@@ -6,6 +6,19 @@ namespace amgui {
 
 
 /**
+    The default constructor.
+ */
+Widget::Widget() :
+    m_visible(true),
+    m_enabled(true),
+    m_mouse(false),
+    m_pushed(false),
+    m_selected(false)
+{
+}
+
+
+/**
     Returns the previous sibling.
  */
 WidgetPtr Widget::getPrevSibling() const {
@@ -173,10 +186,10 @@ void Widget::setEnabled(bool enabled) {
 /**
     The default implementation draws the children.
  */
-void Widget::draw(float x, float y) {
+void Widget::draw(float x, float y, bool enabled, bool highlighted, bool pushed, bool selected) {
     for(auto &child : m_children) {
         if (child->m_visible) {
-            child->draw(x + getX(), y + getY());
+            child->draw(x + getX(), y + getY(), enabled && child->m_enabled, highlighted || child->m_mouse, pushed || child->m_pushed, selected || child->m_selected);
         }
     }
 }
@@ -688,6 +701,30 @@ bool Widget::dragLeave(int x, int y, int modifiers, const Variant &draggedObject
 bool Widget::dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
     WidgetPtr child = _childFromMouse();
     return child ? child->dragWheel(z, w, modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    Used for making the widget tree occupy the smallest possible space.
+    The default implementation simply passes the message to children.
+    Subclasses should add the packing code after the call to the base class method.
+ */
+void Widget::pack() {
+    for(WidgetPtr &child : m_children) {
+        child->pack();
+    }
+}
+
+
+/**
+    Used for laying out widgets according to algorithms occupied by widgets.
+    The default implementation simply passes the message to children.
+    Subclasses should add the layout code before the call to the base class method.
+ */
+void Widget::layout() {
+    for(WidgetPtr &child : m_children) {
+        child->layout();
+    }
 }
 
 
