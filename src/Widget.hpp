@@ -541,6 +541,13 @@ public:
     virtual bool dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource);
 
     /**
+        Invoked on timer event.
+        This implementation passes the event to all its children.
+        @return true if the event was processed, false otherwise.
+     */
+    virtual bool timerTick(double timestamp, int64_t count);
+
+    /**
         Used for making the widget tree occupy the smallest possible space.
         The default implementation simply passes the message to children.
         Subclasses should add the packing code after the call to the base class method.

@@ -44,6 +44,8 @@
 		</Compiler>
 		<Unit filename="main.cpp" />
 		<Unit filename="src/Rect.hpp" />
+		<Unit filename="src/ResourceCache.cpp" />
+		<Unit filename="src/ResourceCache.hpp" />
 		<Unit filename="src/Variant.hpp" />
 		<Unit filename="src/Widget.cpp" />
 		<Unit filename="src/Widget.hpp" />

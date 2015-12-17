@@ -332,6 +332,10 @@ bool Widget::dispatch(ALLEGRO_EVENT *event) {
                 result = dragEnter(event->mouse.x - getX(), event->mouse.y - getY(), _modifiers, _draggedObject, _dragAndDropSource) || result;
             }
             break;
+
+        case ALLEGRO_EVENT_TIMER:
+            result = timerTick(event->timer.timestamp, event->timer.count);
+            break;
     }
 
     return result;
@@ -701,6 +705,22 @@ bool Widget::dragLeave(int x, int y, int modifiers, const Variant &draggedObject
 bool Widget::dragWheel(int z, int w, int modifiers, const Variant &draggedObject, const WidgetPtr &dragSource) {
     WidgetPtr child = _childFromMouse();
     return child ? child->dragWheel(z, w, modifiers, draggedObject, dragSource) : false;
+}
+
+
+/**
+    Invoked on timer event.
+    This implementation passes the event to all its children.
+    @return true if the event was processed, false otherwise.
+ */
+bool Widget::timerTick(double timestamp, int64_t count) {
+    bool ok = false;
+    if (m_enabled) {
+        for(WidgetPtr &child : m_children) {
+            ok = child->timerTick(timestamp, count) || ok;
+        }
+    }
+    return ok;
 }
 
 

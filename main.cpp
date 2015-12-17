@@ -1,6 +1,7 @@
 #include <iostream>
 #include "allegro5/allegro.h"
 #include "allegro5/allegro_primitives.h"
+#include "allegro5/allegro_ttf.h"
 #include "Widget.hpp"
 using namespace std;
 using namespace amgui;
@@ -165,6 +166,8 @@ int main()
     al_install_mouse();
     al_install_keyboard();
     al_init_primitives_addon();
+    al_init_font_addon();
+    al_init_ttf_addon();
 
     ALLEGRO_EVENT_QUEUE *eventQueue = al_create_event_queue();
     ALLEGRO_DISPLAY *display = al_create_display(800, 600);
@@ -208,6 +211,7 @@ int main()
             case ALLEGRO_EVENT_TIMER:
                 root->draw();
                 al_flip_display();
+                root->dispatch(&event);
                 break;
 
             default:
