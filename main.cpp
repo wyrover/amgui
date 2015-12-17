@@ -3,6 +3,7 @@
 #include "allegro5/allegro_primitives.h"
 #include "allegro5/allegro_ttf.h"
 #include "Widget.hpp"
+#include "Skin.hpp"
 using namespace std;
 using namespace amgui;
 
@@ -188,6 +189,9 @@ int main()
     WidgetPtr btn1 = Test::create(form2, 50, 40, 50, 40);
     WidgetPtr btn2 = Test::create(form2, 70, 60, 50, 40);
     WidgetPtr btn3 = Test::create(form2, 90, 80, 50, 40);
+
+    Skin skin("skin.txt");
+    auto font = skin.getFont("test", "font");
 
     bool loop = true;
     while (loop)

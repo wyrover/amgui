@@ -1,0 +1,2 @@
+[test]
+font=myfont.ttf, 40, 0
