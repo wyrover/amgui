@@ -43,6 +43,8 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="main.cpp" />
+		<Unit filename="src/Parser.cpp" />
+		<Unit filename="src/Parser.hpp" />
 		<Unit filename="src/Rect.hpp" />
 		<Unit filename="src/ResourceCache.cpp" />
 		<Unit filename="src/ResourceCache.hpp" />

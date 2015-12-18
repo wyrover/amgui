@@ -192,6 +192,10 @@ int main()
 
     Skin skin("skin.txt");
     auto font = skin.getFont("test", "font");
+    ALLEGRO_COLOR color1 = skin.getColor("test", "color1");
+    int size1 = skin.getInt("test", "size1");
+    bool flag1 = skin.getBool("test", "flag1");
+    Rect dims = skin.getRect("test", "dims");
 
     bool loop = true;
     while (loop)

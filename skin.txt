@@ -1,2 +1,6 @@
 [test]
 font=myfont.ttf, 40, 0
+color1=255, 32, 128
+size1=75
+flag1=1
+dims=100,50,120,320

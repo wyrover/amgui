@@ -5,8 +5,8 @@
 #include <list>
 #include <string>
 #include <allegro5/allegro.h>
-#include "Rect.hpp"
 #include "Variant.hpp"
+#include "Skin.hpp"
 
 
 namespace amgui {
@@ -560,6 +560,12 @@ public:
         Subclasses should add the layout code before the call to the base class method.
      */
     virtual void layout();
+
+    /**
+        A widget can retrieve its gui data from the given skin.
+        The default implementation passes the call to its children.
+     */
+    virtual void setSkin(const Skin &skin);
 
 private:
     //mainly used for debugging

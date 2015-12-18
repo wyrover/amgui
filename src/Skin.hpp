@@ -3,6 +3,7 @@
 
 
 #include "ResourceCache.hpp"
+#include "Rect.hpp"
 
 
 namespace amgui {
@@ -41,6 +42,51 @@ public:
         For example: myfont.ttf, 12, 0.
      */
     std::shared_ptr<ALLEGRO_FONT> getFont(const char *section, const char *key, const std::shared_ptr<ALLEGRO_FONT> &defaultValue = nullptr);
+
+    /**
+        Returns a color at the given section and key.
+        The color value can be an integer value, a hex value, an RGB triplet (e.g. 255, 12, 22), a #RRGGBB value, or a color name.
+     */
+    ALLEGRO_COLOR getColor(const char *section, const char *key, const ALLEGRO_COLOR &defaultValue = ALLEGRO_COLOR());
+
+    /**
+        Returns an integer.
+     */
+    int getInt(const char *section, const char *key, int defaultValue = 0);
+
+    /**
+        Returns an unsigned integer.
+     */
+    unsigned int getUnsignedInt(const char *section, const char *key, unsigned int defaultValue = 0);
+
+    /**
+        Returns a float.
+     */
+    float getFloat(const char *section, const char *key, float defaultValue = 0);
+
+    /**
+        Returns a double.
+     */
+    double getDouble(const char *section, const char *key, double defaultValue = 0);
+
+    /**
+        Returns a string.
+     */
+    const char *getString(const char *section, const char *key, const char *defaultValue = nullptr) {
+        return isEmpty() ? defaultValue : al_get_config_value(m_config.get(), section, key);
+    }
+
+    /**
+        The strings 't', 'true' or '1' are recognized as the true value.
+        the comparison is case insensitive.
+        All other values are false.
+     */
+    bool getBool(const char *section, const char *key, bool defaultValue = false);
+
+    /**
+        Reads a rectangle, i.e. the left, top, right and bottom values.
+     */
+    Rect getRect(const char *section, const char *key, const Rect &defaultValue = Rect());
 
 private:
     //bitmaps, fonts etc are stored here

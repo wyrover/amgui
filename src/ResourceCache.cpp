@@ -20,7 +20,7 @@ std::shared_ptr<ALLEGRO_BITMAP> ResourceCache::loadBitmap(const std::string &fil
 
     //if found, return it
     if (cached != m_bitmaps.end()) {
-        return cached->second;
+        return cached->second.lock();
     }
 
     //load the bitmap
@@ -53,7 +53,7 @@ std::shared_ptr<ALLEGRO_FONT> ResourceCache::loadFont(const std::string &filenam
 
     //if found, return it
     if (cached != m_fonts.end()) {
-        return cached->second;
+        return cached->second.lock();
     }
 
     //load the font

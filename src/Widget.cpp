@@ -748,6 +748,17 @@ void Widget::layout() {
 }
 
 
+/**
+    A widget can retrieve its gui data from the given skin.
+    The default implementation passes the call to its children.
+ */
+void Widget::setSkin(const Skin &skin) {
+    for(WidgetPtr &child : m_children) {
+        child->setSkin(skin);
+    }
+}
+
+
 //global state
 std::weak_ptr<Widget> Widget::_focusWidget;
 bool Widget::_dragAndDrop = false;

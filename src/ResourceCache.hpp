@@ -56,10 +56,10 @@ public:
 
 private:
     //bitmaps
-    std::unordered_map<std::string, std::shared_ptr<ALLEGRO_BITMAP>> m_bitmaps;
+    std::unordered_map<std::string, std::weak_ptr<ALLEGRO_BITMAP>> m_bitmaps;
 
     //fonts
-    std::unordered_map<std::string, std::shared_ptr<ALLEGRO_FONT>> m_fonts;
+    std::unordered_map<std::string, std::weak_ptr<ALLEGRO_FONT>> m_fonts;
 };
 
 
